@@ -322,7 +322,7 @@
     <div class="handle">
       <label class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" type="search" placeholder="Find a stage, gate, toilets, first aid…" autocomplete="off">
+        <input id="q" type="search" placeholder="Find a stage, gate, toilets, showers…" autocomplete="off">
       </label>
       <button class="toggle" id="sheetToggle" aria-label="Show or hide the list">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -381,7 +381,8 @@
     area:    { label: 'Arenas & halls', c: '#e75fa8' },
     camping: { label: 'Camping',  c: '#3a3a3a' },
     help:    { label: 'Help & safety', c: '#1f8f4e' },
-    loo:     { label: 'Toilets & showers', c: '#2c5ec7' },
+    loo:     { label: 'Toilets',  c: '#2c5ec7' },
+    shower:  { label: 'Showers',  c: '#1f9bb8' },
     food:    { label: 'Food & drink', c: '#5db64c' },
     trade:   { label: 'Trade & sales', c: '#d9331d' },
     parking: { label: 'Parking',  c: '#2c5ec7' },
@@ -421,19 +422,23 @@
     { n: 'Trade Control', k: 'help', x: 280, y: 361, s: 'South of the Trade Village' },
     { n: 'ATM (cash machine)', k: 'help', x: 365, y: 268, s: 'By the Party Stage' },
 
-    { n: 'Toilets & showers – Orange Camping', k: 'loo', x: 565, y: 388, s: 'Accessible toilets here too' },
-    { n: 'Toilets & showers – Display Arena', k: 'loo', x: 566, y: 245, s: 'Accessible toilets here too' },
+    { n: 'Toilets – Blue Camping', k: 'loo', x: 321, y: 363, s: 'North-west corner of Blue Camping, by Trade Control' },
+    { n: 'Toilets – Orange Camping', k: 'loo', x: 560, y: 386, s: 'North edge of Orange Camping · accessible toilets here too' },
+    { n: 'Toilets – Display Arena', k: 'loo', x: 562, y: 240, s: 'West of the Display Arena · accessible toilets here too' },
     { n: 'Toilets – Hub Stage', k: 'loo', x: 559, y: 336, s: 'South of Winter Wonderland' },
     { n: 'Toilets – Party Stage', k: 'loo', x: 372, y: 240, s: 'Accessible toilets, bar, catering' },
     { n: 'Toilets – Green Camping', k: 'loo', x: 300, y: 200, s: 'By the Chill Stage' },
     { n: 'Toilets – Brown Camping', k: 'loo', x: 270, y: 58, s: 'North edge' },
     { n: 'Toilets – Wye Hall', k: 'loo', x: 137, y: 180, s: 'West side, accessible toilets nearby' },
     { n: 'Toilets – Sheep Shed', k: 'loo', x: 146, y: 290, s: 'West side' },
-    { n: 'Toilets – Day Gate', k: 'loo', x: 80, y: 410, s: 'Inside Day Gate' },
-    { n: 'Toilets & showers – Yellow (north)', k: 'loo', x: 780, y: 231, s: 'West edge of Yellow Camping' },
+    { n: 'Toilets – Day Gate', k: 'loo', x: 80, y: 410, s: 'Inside Day Gate, Purple Camping' },
+    { n: 'Toilets – Yellow (north-west)', k: 'loo', x: 780, y: 231, s: 'West edge of Yellow Camping' },
     { n: 'Toilets – Yellow (north-east)', k: 'loo', x: 843, y: 231, s: 'Middle of Yellow Camping' },
-    { n: 'Toilets – Yellow (south)', k: 'loo', x: 780, y: 437, s: 'West edge of Yellow Camping' },
-    { n: 'Toilets & showers – Yellow (south-east)', k: 'loo', x: 843, y: 462, s: 'Middle of Yellow Camping' },
+    { n: 'Toilets – Yellow (south-west)', k: 'loo', x: 780, y: 437, s: 'West edge of Yellow Camping' },
+    { n: 'Toilets – Yellow (south-east)', k: 'loo', x: 843, y: 462, s: 'Middle of Yellow Camping' },
+
+    { n: 'Showers – Orange Camping', k: 'shower', x: 580, y: 388, s: 'Next to the Orange Camping toilets' },
+    { n: 'Showers – Display Arena', k: 'shower', x: 576, y: 258, s: 'Next to the Display Arena toilets' },
 
     { n: 'Bar & catering – Party Stage', k: 'food', x: 376, y: 238, s: 'Main food & drink cluster' },
     { n: 'Catering – Green Camping', k: 'food', x: 302, y: 198, s: 'By the Chill Stage' },
