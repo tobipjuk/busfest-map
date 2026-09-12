@@ -1,5 +1,17 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2b2e83">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Busfest">
+<meta name="color-scheme" content="light dark">
 <title>Busfest Wayfinder</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+</head>
+<body>
 <style>
   :root {
     --bg: #eef0f4;
@@ -18,7 +30,7 @@
     --warn: #c47a00;
     --shadow: 0 6px 24px rgba(23,32,58,.18);
     --radius: 14px;
-    --sheet-h: 44vh;
+    --sheet-h: 40vh;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -72,12 +84,13 @@
   button { font: inherit; color: inherit; }
   button:focus-visible, input:focus-visible { outline: 3px solid var(--you); outline-offset: 2px; }
 
-  .app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  .app { position: fixed; inset: 0; height: 100dvh; display: flex; flex-direction: column; }
 
   /* ---- Top bar ---- */
   .top {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 16px;
+    padding-top: calc(10px + env(safe-area-inset-top));
     background: var(--panel);
     border-bottom: 1px solid var(--line);
     z-index: 5;
@@ -204,7 +217,8 @@
     height: var(--sheet-h); display: flex; flex-direction: column;
     transition: height .25s ease; z-index: 5;
   }
-  .sheet.collapsed { height: 58px; }
+  .sheet.collapsed { height: calc(58px + env(safe-area-inset-bottom)); }
+  .sheet { padding-bottom: env(safe-area-inset-bottom); }
   .sheet .handle { display: flex; align-items: center; gap: 10px; padding: 8px 16px 6px; }
   .sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 6px; }
   .search {
@@ -729,6 +743,7 @@
     }
   }
   function showGpsBlocked() {
+    if (you.lat != null) return;
     setGps('bad', 'Location blocked here');
     if (calMode || youPx()) return;
     document.getElementById('bannerTitle').textContent = 'This viewer blocks GPS';
@@ -817,6 +832,7 @@
     navigator.geolocation.watchPosition(pos => {
       you.lat = pos.coords.latitude; you.lng = pos.coords.longitude; you.acc = pos.coords.accuracy; you.t = Date.now();
       you.manual = null;
+      if (!calMode && banner.classList.contains('show')) { banner.classList.remove('show'); document.getElementById('bannerCancel').textContent = 'Cancel'; }
       if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && pos.coords.speed > 0.7) you.heading = pos.coords.heading;
       const p = llToPx(you.lat, you.lng);
       const onSite = p.x > -200 && p.x < 1224 && p.y > -200 && p.y < 924;
@@ -828,7 +844,9 @@
     }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
     // An embedded viewer can deny geolocation outright (no prompt); surface that straight away.
     if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions.query({ name: 'geolocation' }).then(st => { if (st.state === 'denied') showGpsBlocked(); }).catch(() => {});
+      navigator.permissions.query({ name: 'geolocation' }).then(st => {
+        if (st.state === 'denied') setTimeout(() => { if (you.lat == null) showGpsBlocked(); }, 4000);
+      }).catch(() => {});
     }
   }
   // Manual coordinates (e.g. copied from Google Maps)
@@ -855,3 +873,6 @@
   document.getElementById('mapimg').addEventListener('load', fitMap);
 })();
 </script>
+
+</body>
+</html>
