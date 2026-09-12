@@ -230,6 +230,7 @@
   .search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 16px; }
   .search input::placeholder { color: var(--ink-3); }
   .sheet .toggle { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); cursor: pointer; display: grid; place-items: center; flex: none; }
+  .sheet-note { margin: 0 16px 8px; padding: 8px 12px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 14px; }
   .chips { display: flex; gap: 6px; padding: 0 16px 8px; overflow-x: auto; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
   .chip {
@@ -327,7 +328,8 @@
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
     </div>
-    <div class="chips" id="chips"></div>
+    <div class="sheet-note" id="sheetNote" hidden>Which landmark are you standing next to? Tap it in the list.</div>
+  <div class="chips" id="chips"></div>
     <div class="list" id="list"></div>
   </div>
 </div>
@@ -341,6 +343,13 @@
     <button class="btn primary" id="mCal">Fix my position now</button>
     <button class="btn danger" id="mReset">Reset alignment</button>
   </div>
+  <h2>Share with friends</h2>
+  <p>Share the link from here and it carries your map alignment, so everyone who opens it starts lined up without doing their own corrections.</p>
+  <div class="act">
+    <button class="btn primary" id="mShare">Share aligned link</button>
+    <button class="btn" id="mCopyCode">Copy alignment code</button>
+  </div>
+  <div class="kv" id="shareMsg"></div>
   <h2>No GPS in this viewer?</h2>
   <p>Some viewers block location without asking. Two ways round it: tap the crosshair and tap where you are, or paste your coordinates from Google Maps (long-press your blue dot, then copy the two numbers shown at the top).</p>
   <div class="coord">
@@ -354,7 +363,7 @@
     <button class="btn" id="mVanClear">Remove van pin</button>
   </div>
   <h2>Compass</h2>
-  <p>The map is drawn north-up (the printed compass rose on it is wrong: Blackmore Park Road is on the right, Hanley Road along the bottom). Where your phone allows it, a blue cone shows which way you're facing.</p>
+  <p>The map is drawn north-up (the printed compass rose on it is wrong: Blackmore Park Road is on the right, Hanley Road along the bottom). The compass switches on at your first tap; a blue cone shows which way you're facing and the direction arrow turns with you. If your phone refused it, try again here.</p>
   <div class="act">
     <button class="btn" id="mCompass">Enable compass</button>
     <button class="btn" id="mClose">Done</button>
@@ -443,6 +452,18 @@
   // ---------- Map <-> world alignment ----------
   // Estimated: the map is drawn north-up but stretched sideways. Base scale in metres per map pixel.
   const BASE = { xRef: 110, yRef: 15, latRef: 52.08333, lngRef: -2.31585, mx: 0.79, my: 1.31 };
+  // A shared link can carry a better alignment: #a=latRef,lngRef,mx,my
+  let sharedAlign = null;
+  try {
+    const m = (location.hash || '').match(/a=(-?[\d.]+),(-?[\d.]+),([\d.]+),([\d.]+)/);
+    if (m) {
+      const v = m.slice(1).map(Number);
+      if (v.every(isFinite) && Math.abs(v[0] - BASE.latRef) < 0.05 && Math.abs(v[1] - BASE.lngRef) < 0.08 && v[2] > 0.1 && v[2] < 5 && v[3] > 0.1 && v[3] < 5) {
+        sharedAlign = { latRef: v[0], lngRef: v[1], mx: v[2], my: v[3] };
+        Object.assign(BASE, sharedAlign);
+      }
+    }
+  } catch (e) {}
   const M_PER_DEG_LAT = 111200;
   const store = {
     get(k, d) { try { const v = localStorage.getItem('busfest.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -690,7 +711,8 @@
     const yp = youPx();
     const term = q.value.trim().toLowerCase();
     let items = PLACES.map(p => ({ ...p }));
-    if (van) items.unshift({ n: 'My van', k: 'van', s: 'Your saved pitch', c: '#17203a', ...van, isVan: true });
+    if (calMode) items = items.filter(p => p.k !== 'camping' && p.k !== 'parking');
+    if (van && !calMode) items.unshift({ n: 'My van', k: 'van', s: 'Your saved pitch', c: '#17203a', ...van, isVan: true });
     items = items.filter(p => (filter === 'all' || p.k === filter) && (!term || (p.n + ' ' + (p.s || '')).toLowerCase().includes(term)));
     if (yp) {
       for (const p of items) p._db = distBearing(yp, placePx(p));
@@ -708,6 +730,7 @@
   listEl.addEventListener('click', e => {
     const r = e.target.closest('.row'); if (!r) return;
     const p = listEl._items[+r.dataset.i];
+    if (calMode && !p.isVan) { calibrateAt(p.x, p.y); return; }
     target = p;
     const t = placePx(p);
     const yp = youPx();
@@ -728,50 +751,65 @@
 
   // ---------- Tap handling (calibration / manual position) ----------
   const banner = document.getElementById('banner');
+  function showNote(title, text, btn) {
+    document.getElementById('bannerTitle').textContent = title;
+    document.getElementById('bannerText').textContent = text;
+    document.getElementById('bannerCancel').textContent = btn || 'OK';
+    banner.classList.add('show');
+  }
+  function hideNote() { banner.classList.remove('show'); document.getElementById('bannerCancel').textContent = 'Cancel'; }
   function setCalMode(on) {
     calMode = on;
     vp.classList.toggle('calibrating', on);
     document.getElementById('btnCal').classList.toggle('active', on);
-    banner.classList.toggle('show', on);
+    document.getElementById('sheetNote').hidden = !on;
     if (on) {
-      document.getElementById('bannerCancel').textContent = 'Cancel';
       const gpsOk = you.lat != null;
-      document.getElementById('bannerTitle').textContent = gpsOk ? 'Tap where you are' : 'No GPS — tap where you are';
-      document.getElementById('bannerText').textContent = gpsOk
-        ? 'Tap the exact spot on the map you\'re standing on. That lines the GPS dot up with the map.'
-        : 'GPS isn\'t available, so tapping sets your position by hand. Distances will be measured from there.';
-    }
+      const n = calPoints.length;
+      if (gpsOk) showNote(
+        n === 0 ? 'Line up the map · step 1 of 2' : n === 1 ? 'Line up the map · step 2 of 2' : 'Improve the alignment',
+        'Stand next to something you can name (a gate, stage or toilet block) and tap it in the list below. Or tap your exact spot on the map.',
+        'Cancel');
+      else showNote('No GPS — tap where you are', 'GPS isn\'t available, so tapping sets your position by hand. Distances will be measured from there.', 'Cancel');
+      sheet.classList.remove('collapsed');
+      target = null;
+    } else hideNote();
+    renderList();
+  }
+  function calibrateAt(x, y) {
+    if (you.lat == null) { you.manual = { x, y }; setGps('warn', 'Position set by hand'); setCalMode(false); render(); return; }
+    calPoints.push({ x: Math.round(x), y: Math.round(y), lat: you.lat, lng: you.lng, t: Date.now() });
+    if (calPoints.length > 4) calPoints.shift();
+    store.set('cal', calPoints);
+    rebuildAlignment();
+    you.manual = null;
+    updateCalInfo();
+    setCalMode(false);
+    const n = calPoints.length;
+    setGps('ok', `GPS ±${Math.round(you.acc || 0)} m · aligned (${n})`);
+    if (n === 1) showNote('Step 1 done', 'The dot is now on the right spot. When you\'re somewhere else on site, at least 100 m away, tap the crosshair and do it again to fix the scale too.', 'Later');
+    else showNote('Map aligned', 'Distances and directions should now be right across the site. Share the link from Settings so friends get the same alignment.', 'OK');
+    const yp = youPx(); if (yp) centerOn(yp.x, yp.y, Math.max(view.s, 1.6));
+    render();
   }
   function showGpsBlocked() {
     if (you.lat != null) return;
     setGps('bad', 'Location blocked here');
     if (calMode || youPx()) return;
-    document.getElementById('bannerTitle').textContent = 'This viewer blocks GPS';
-    document.getElementById('bannerText').textContent = 'No prompt will appear. Tap the crosshair, then tap the spot you\'re standing on: distances and directions work from there. Or paste coordinates in Settings.';
-    document.getElementById('bannerCancel').textContent = 'OK';
-    banner.classList.add('show');
+    showNote('This viewer blocks GPS', 'No prompt will appear. Tap the crosshair, then tap the spot you\'re standing on: distances and directions work from there. Or paste coordinates in Settings.', 'OK');
   }
   function onTap(cx, cy) {
     if (!calMode) return;
     const m = screenToMap(cx, cy);
     if (m.x < 0 || m.y < 0 || m.x > 1024 || m.y > 724) return;
-    if (you.lat != null) {
-      calPoints.push({ x: Math.round(m.x), y: Math.round(m.y), lat: you.lat, lng: you.lng, t: Date.now() });
-      if (calPoints.length > 4) calPoints.shift();
-      store.set('cal', calPoints);
-      rebuildAlignment();
-      you.manual = null;
-      updateCalInfo();
-      setGps('ok', `Aligned · ±${Math.round(you.acc || 0)} m`);
-    } else {
-      you.manual = { x: m.x, y: m.y };
-      setGps('warn', 'Position set by hand');
-    }
+    if (you.lat != null) { calibrateAt(m.x, m.y); return; }
+    you.manual = { x: m.x, y: m.y };
+    setGps('warn', 'Position set by hand');
     setCalMode(false);
     render();
   }
   document.getElementById('btnCal').addEventListener('click', () => setCalMode(!calMode));
-  document.getElementById('bannerCancel').addEventListener('click', () => { setCalMode(false); banner.classList.remove('show'); document.getElementById('bannerCancel').textContent = 'Cancel'; });
+  document.getElementById('bannerCancel').addEventListener('click', () => { if (calMode) setCalMode(false); else hideNote(); });
 
   // ---------- Van pin ----------
   document.getElementById('btnVan').addEventListener('click', () => {
@@ -802,8 +840,20 @@
   dim.addEventListener('click', closeModal);
   document.getElementById('mCal').addEventListener('click', () => { closeModal(); setCalMode(true); });
   document.getElementById('mReset').addEventListener('click', () => {
-    if (!confirm('Forget all position corrections?')) return;
     calPoints = []; store.del('cal'); rebuildAlignment(); updateCalInfo(); render();
+  });
+  function alignCode() { return `${A.latRef.toFixed(6)},${A.lngRef.toFixed(6)},${A.mx.toFixed(3)},${A.my.toFixed(3)}`; }
+  function shareUrl() { return location.origin + location.pathname + '#a=' + alignCode(); }
+  document.getElementById('mShare').addEventListener('click', async () => {
+    const msg = document.getElementById('shareMsg'); const url = shareUrl();
+    try {
+      if (navigator.share) { await navigator.share({ title: 'Busfest Wayfinder', text: 'Busfest site map with live position', url }); msg.textContent = 'Shared.'; return; }
+      await navigator.clipboard.writeText(url); msg.textContent = 'Link copied.';
+    } catch (e) { msg.textContent = url; }
+  });
+  document.getElementById('mCopyCode').addEventListener('click', async () => {
+    const msg = document.getElementById('shareMsg');
+    try { await navigator.clipboard.writeText(alignCode()); msg.textContent = 'Copied: ' + alignCode(); } catch (e) { msg.textContent = alignCode(); }
   });
   document.getElementById('mVanClear').addEventListener('click', () => { van = null; store.del('van'); if (target && target.isVan) target = null; render(); });
 
@@ -815,15 +865,19 @@
     if (h == null) return;
     if (you.heading == null || Math.abs(h - you.heading) > 2) { you.heading = h; render(); }
   }
+  let compassArmed = false;
   function enableCompass() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission().then(s => { if (s === 'granted') window.addEventListener('deviceorientation', onOrient); }).catch(() => {});
-    } else if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', onOrient);
-    else window.addEventListener('deviceorientation', onOrient);
-    closeModal();
+      DeviceOrientationEvent.requestPermission().then(s => { if (s === 'granted') { window.addEventListener('deviceorientation', onOrient); compassArmed = true; } }).catch(() => {});
+    } else if ('ondeviceorientationabsolute' in window) { window.addEventListener('deviceorientationabsolute', onOrient); compassArmed = true; }
+    else { window.addEventListener('deviceorientation', onOrient); compassArmed = true; }
   }
-  document.getElementById('mCompass').addEventListener('click', enableCompass);
-  if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', onOrient);
+  document.getElementById('mCompass').addEventListener('click', () => { enableCompass(); closeModal(); });
+  if ('ondeviceorientationabsolute' in window) { window.addEventListener('deviceorientationabsolute', onOrient); compassArmed = true; }
+  // iOS only grants orientation access from a user gesture, so ask at the first tap.
+  const firstGesture = () => { if (!compassArmed) enableCompass(); };
+  document.addEventListener('touchend', firstGesture, { once: true, passive: true });
+  document.addEventListener('click', firstGesture, { once: true });
 
   // ---------- Geolocation ----------
   let firstFix = true;
@@ -832,12 +886,16 @@
     navigator.geolocation.watchPosition(pos => {
       you.lat = pos.coords.latitude; you.lng = pos.coords.longitude; you.acc = pos.coords.accuracy; you.t = Date.now();
       you.manual = null;
-      if (!calMode && banner.classList.contains('show')) { banner.classList.remove('show'); document.getElementById('bannerCancel').textContent = 'Cancel'; }
+      if (!calMode && document.getElementById('bannerTitle').textContent.startsWith('This viewer')) hideNote();
       if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && pos.coords.speed > 0.7) you.heading = pos.coords.heading;
       const p = llToPx(you.lat, you.lng);
       const onSite = p.x > -200 && p.x < 1224 && p.y > -200 && p.y < 924;
-      setGps(you.acc < 30 ? 'ok' : 'warn', `GPS ±${Math.round(you.acc)} m${calPoints.length ? '' : ' · estimated alignment'}`);
-      if (firstFix) { firstFix = false; if (onSite) centerOn(p.x, p.y, 1.6); }
+      setGps(you.acc < 30 ? 'ok' : 'warn', `GPS ±${Math.round(you.acc)} m · ${calPoints.length ? 'aligned (' + calPoints.length + ')' : sharedAlign ? 'shared alignment' : 'not aligned yet'}`);
+      if (firstFix) {
+        firstFix = false;
+        if (onSite) centerOn(p.x, p.y, 1.6);
+        if (onSite && !calPoints.length && !sharedAlign) setTimeout(() => { if (!calMode && !calPoints.length) setCalMode(true); }, 1200);
+      }
       render();
     }, err => {
       if (err.code === 1) showGpsBlocked(); else setGps('warn', 'No GPS fix yet');
