@@ -414,7 +414,7 @@
     { n: 'Green Camping', k: 'camping', x: 325, y: 160, s: 'North-west, by the Chill Stage', c: '#5db64c' },
     { n: 'Brown Camping', k: 'camping', x: 478, y: 47, s: 'Family camping, whole north edge', c: '#8a5a2b' },
 
-    { n: 'First Aid', k: 'help', x: 503, y: 264, s: 'Between Party Stage and Display Arena' },
+    { n: 'First Aid', k: 'help', x: 500, y: 265, s: 'Between Party Stage and Display Arena' },
     { n: 'Security (centre)', k: 'help', x: 463, y: 235, s: 'North of the Fun Zone' },
     { n: 'Security (east)', k: 'help', x: 679, y: 277, s: 'Between Display Arena and Yellow Camping' },
     { n: 'Fire Station', k: 'help', x: 495, y: 160, s: 'East end of the Main Arena' },
@@ -425,25 +425,27 @@
     { n: 'Toilets – Blue Camping', k: 'loo', x: 321, y: 363, s: 'North-west corner of Blue Camping, by Trade Control' },
     { n: 'Toilets – Orange Camping', k: 'loo', x: 560, y: 386, s: 'North edge of Orange Camping · accessible toilets here too' },
     { n: 'Toilets – Display Arena', k: 'loo', x: 562, y: 240, s: 'West of the Display Arena · accessible toilets here too' },
-    { n: 'Toilets – Hub Stage', k: 'loo', x: 559, y: 336, s: 'South of Winter Wonderland' },
+    { n: 'Toilets – Hub Stage', k: 'loo', x: 521, y: 338, s: 'South of the Hub Stage' },
     { n: 'Toilets – Party Stage', k: 'loo', x: 372, y: 240, s: 'Accessible toilets, bar, catering' },
     { n: 'Toilets – Green Camping', k: 'loo', x: 300, y: 200, s: 'By the Chill Stage' },
     { n: 'Toilets – Brown Camping', k: 'loo', x: 270, y: 58, s: 'North edge' },
-    { n: 'Toilets – Wye Hall', k: 'loo', x: 137, y: 180, s: 'West side, accessible toilets nearby' },
-    { n: 'Toilets – Sheep Shed', k: 'loo', x: 146, y: 290, s: 'West side' },
-    { n: 'Toilets – Day Gate', k: 'loo', x: 80, y: 410, s: 'Inside Day Gate, Purple Camping' },
+    { n: 'Toilets – Wye Hall (west)', k: 'loo', x: 143, y: 213, s: 'West side by Kildare Hall · accessible toilets here too' },
+    { n: 'Toilets – Sheep Shed', k: 'loo', x: 143, y: 292, s: 'West side, below the Sheep Shed Stage' },
+    { n: 'Toilets – Day Gate', k: 'loo', x: 79, y: 415, s: 'Inside Day Gate, Purple Camping' },
     { n: 'Toilets – Yellow (north-west)', k: 'loo', x: 780, y: 231, s: 'West edge of Yellow Camping' },
     { n: 'Toilets – Yellow (north-east)', k: 'loo', x: 843, y: 231, s: 'Middle of Yellow Camping' },
     { n: 'Toilets – Yellow (south-west)', k: 'loo', x: 780, y: 437, s: 'West edge of Yellow Camping' },
     { n: 'Toilets – Yellow (south-east)', k: 'loo', x: 843, y: 462, s: 'Middle of Yellow Camping' },
 
-    { n: 'Showers – Orange Camping', k: 'shower', x: 580, y: 388, s: 'Next to the Orange Camping toilets' },
-    { n: 'Showers – Display Arena', k: 'shower', x: 576, y: 258, s: 'Next to the Display Arena toilets' },
+    { n: 'Showers – Orange Camping', k: 'shower', x: 577, y: 388, s: 'Next to the Orange Camping toilets' },
+    { n: 'Showers – Display Arena', k: 'shower', x: 567, y: 259, s: 'Below the Display Arena toilets' },
+    { n: 'Showers – Wye Hall (west)', k: 'shower', x: 136, y: 228, s: 'West side, below the Kildare Hall toilets' },
 
     { n: 'Bar & catering – Party Stage', k: 'food', x: 376, y: 238, s: 'Main food & drink cluster' },
     { n: 'Catering – Green Camping', k: 'food', x: 302, y: 198, s: 'By the Chill Stage' },
-    { n: 'Bar & catering – Hub Stage', k: 'food', x: 556, y: 334, s: 'South of Winter Wonderland' },
-    { n: 'Catering – Sheep Shed', k: 'food', x: 140, y: 325, s: 'West side' },
+    { n: 'Bar & catering – Hub Stage', k: 'food', x: 565, y: 338, s: 'South of Winter Wonderland' },
+    { n: 'Bar & catering – Wye Hall (west)', k: 'food', x: 135, y: 190, s: 'West side by Wye Hall' },
+    { n: 'Bar & catering – Sheep Shed', k: 'food', x: 135, y: 330, s: 'West side, below the Sheep Shed Stage' },
 
     { n: 'Trade Village', k: 'trade', x: 255, y: 262, s: 'Parts, accessories, clothing' },
     { n: 'Vehicle Sales', k: 'trade', x: 480, y: 107, s: 'North of the Main Arena' },
@@ -455,75 +457,103 @@
   ];
 
   // ---------- Map <-> world alignment ----------
-  // Estimated: the map is drawn north-up but stretched sideways. Base scale in metres per map pixel.
-  const BASE = { xRef: 110, yRef: 15, latRef: 52.08333, lngRef: -2.31585, mx: 0.79, my: 1.31 };
-  // A shared link can carry a better alignment: #a=latRef,lngRef,mx,my
-  let sharedAlign = null;
-  try {
-    const m = (location.hash || '').match(/a=(-?[\d.]+),(-?[\d.]+),([\d.]+),([\d.]+)/);
-    if (m) {
-      const v = m.slice(1).map(Number);
-      if (v.every(isFinite) && Math.abs(v[0] - BASE.latRef) < 0.05 && Math.abs(v[1] - BASE.lngRef) < 0.08 && v[2] > 0.1 && v[2] < 5 && v[3] > 0.1 && v[3] < 5) {
-        sharedAlign = { latRef: v[0], lngRef: v[1], mx: v[2], my: v[3] };
-        Object.assign(BASE, sharedAlign);
-      }
-    }
-  } catch (e) {}
+  // Map pixels -> metres east/north of a reference point, as an affine transform:
+  //   E = a*x + b*y + e,  N = c*x + d*y + f
+  // The estimate below assumes a north-up drawing that is stretched sideways; calibration
+  // points refine it (1 point: shift, 2: scales, 3+: full affine incl. rotation).
+  const REF = { lat: 52.08333, lng: -2.31585 };
   const M_PER_DEG_LAT = 111200;
+  const M_PER_DEG_LNG = 111320 * Math.cos(REF.lat * Math.PI / 180);
+  const BASE = { a: 0.79, b: 0, c: 0, d: -1.31, e: -0.79 * 110, f: 1.31 * 15 };
   const store = {
     get(k, d) { try { const v = localStorage.getItem('busfest.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('busfest.' + k, JSON.stringify(v)); } catch (e) {} },
     del(k) { try { localStorage.removeItem('busfest.' + k); } catch (e) {} }
   };
+  // A shared link can carry a better alignment: #a=a,b,c,d,e,f (older links: #a=lat,lng,mx,my)
+  let sharedAlign = null;
+  try {
+    const m = (location.hash || '').match(/a=([-\d.,]+)/);
+    if (m) {
+      const v = m[1].split(',').map(Number);
+      if (v.length === 6 && v.every(isFinite) && saneAffine(v)) sharedAlign = { a: v[0], b: v[1], c: v[2], d: v[3], e: v[4], f: v[5] };
+      else if (v.length === 4 && v.every(isFinite) && v[2] > 0.1 && v[2] < 5 && v[3] > 0.1 && v[3] < 5) {
+        const E0 = (v[1] - REF.lng) * M_PER_DEG_LNG, N0 = (v[0] - REF.lat) * M_PER_DEG_LAT;
+        sharedAlign = { a: v[2], b: 0, c: 0, d: -v[3], e: E0 - v[2] * 110, f: N0 + v[3] * 15 };
+      }
+      if (sharedAlign) Object.assign(BASE, sharedAlign);
+    }
+  } catch (e) {}
+  function saneAffine(v) {
+    const sx = Math.hypot(v[0], v[2]), sy = Math.hypot(v[1], v[3]), det = v[0] * v[3] - v[1] * v[2];
+    return sx > 0.15 && sx < 5 && sy > 0.15 && sy < 5 && Math.abs(det) > 0.01 && Math.abs(v[4]) < 5000 && Math.abs(v[5]) < 5000;
+  }
   let calPoints = store.get('cal', []);
   let A = Object.assign({}, BASE);
 
-  function mPerDegLng(lat) { return 111320 * Math.cos(lat * Math.PI / 180); }
+  function llToEN(lat, lng) { return { E: (lng - REF.lng) * M_PER_DEG_LNG, N: (lat - REF.lat) * M_PER_DEG_LAT }; }
+  function pxToEN(x, y) { return { E: A.a * x + A.b * y + A.e, N: A.c * x + A.d * y + A.f }; }
   function llToPx(lat, lng) {
-    return {
-      x: A.xRef + (lng - A.lngRef) * mPerDegLng(A.latRef) / A.mx,
-      y: A.yRef - (lat - A.latRef) * M_PER_DEG_LAT / A.my
-    };
+    const { E, N } = llToEN(lat, lng);
+    const det = A.a * A.d - A.b * A.c, u = E - A.e, w = N - A.f;
+    return { x: (A.d * u - A.b * w) / det, y: (-A.c * u + A.a * w) / det };
   }
   function pxToLl(x, y) {
-    return {
-      lat: A.latRef - (y - A.yRef) * A.my / M_PER_DEG_LAT,
-      lng: A.lngRef + (x - A.xRef) * A.mx / mPerDegLng(A.latRef)
-    };
+    const { E, N } = pxToEN(x, y);
+    return { lat: REF.lat + N / M_PER_DEG_LAT, lng: REF.lng + E / M_PER_DEG_LNG };
+  }
+  function scaleX() { return Math.hypot(A.a, A.c); }   // metres per map pixel along x
+  function scaleY() { return Math.hypot(A.b, A.d); }
+  function solve3(M, r) {   // Cramer's rule for a 3x3 system
+    const det = m => m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6]) + m[2] * (m[3] * m[7] - m[4] * m[6]);
+    const D = det(M); if (Math.abs(D) < 1e-9) return null;
+    const col = i => { const c = M.slice(); c[i] = r[0]; c[i + 3] = r[1]; c[i + 6] = r[2]; return det(c) / D; };
+    return [col(0), col(1), col(2)];
   }
   function rebuildAlignment() {
     A = Object.assign({}, BASE);
-    if (!calPoints.length) return;
-    if (calPoints.length >= 2) {
-      // Solve separate x/y scales from well-separated pairs; fall back to a uniform factor.
+    const n = calPoints.length;
+    if (!n) return;
+    const pts = calPoints.map(p => Object.assign({ x: p.x, y: p.y }, llToEN(p.lat, p.lng)));
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    let done = false;
+    if (n >= 3) {
+      // Full least-squares affine, only if the points aren't nearly collinear.
+      let Sx = 0, Sy = 0, Sxx = 0, Sxy = 0, Syy = 0, SE = 0, SxE = 0, SyE = 0, SN = 0, SxN = 0, SyN = 0;
+      for (const p of pts) { Sx += p.x; Sy += p.y; Sxx += p.x * p.x; Sxy += p.x * p.y; Syy += p.y * p.y; SE += p.E; SxE += p.x * p.E; SyE += p.y * p.E; SN += p.N; SxN += p.x * p.N; SyN += p.y * p.N; }
+      const mx = Sx / n, my = Sy / n;
+      const cov = (Sxx / n - mx * mx) * (Syy / n - my * my) - Math.pow(Sxy / n - mx * my, 2);
+      if (cov > Math.pow(35, 4)) {
+        const M = [Sxx, Sxy, Sx, Sxy, Syy, Sy, Sx, Sy, n];
+        const r1 = solve3(M, [SxE, SyE, SE]), r2 = solve3(M, [SxN, SyN, SN]);
+        if (r1 && r2 && saneAffine([r1[0], r1[1], r2[0], r2[1], r1[2], r2[2]])) {
+          A = { a: r1[0], b: r1[1], c: r2[0], d: r2[1], e: r1[2], f: r2[2] };
+          done = true;
+        }
+      }
+    }
+    if (!done && n >= 2) {
+      // Separate x/y scales from well-separated pairs; else a uniform factor. No rotation.
       let sx = [], sy = [], su = [];
-      for (let i = 0; i < calPoints.length; i++) for (let j = i + 1; j < calPoints.length; j++) {
-        const p = calPoints[i], q = calPoints[j];
-        const dx = q.x - p.x, dy = q.y - p.y;
-        const dE = (q.lng - p.lng) * mPerDegLng(BASE.latRef), dN = (q.lat - p.lat) * M_PER_DEG_LAT;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        const p = pts[i], q = pts[j];
+        const dx = q.x - p.x, dy = q.y - p.y, dE = q.E - p.E, dN = q.N - p.N;
         if (Math.abs(dx) >= 120) sx.push(Math.abs(dE / dx));
         if (Math.abs(dy) >= 80) sy.push(Math.abs(dN / dy));
-        const dm = Math.hypot(dx * BASE.mx, dy * BASE.my), dr = Math.hypot(dE, dN);
+        const dm = Math.hypot(dx * BASE.a, dy * BASE.d), dr = Math.hypot(dE, dN);
         if (dm > 60) su.push(dr / dm);
       }
       const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
-      const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-      if (sx.length && sy.length) {
-        A.mx = clamp(mean(sx), BASE.mx / 3, BASE.mx * 3);
-        A.my = clamp(mean(sy), BASE.my / 3, BASE.my * 3);
-      } else if (su.length) {
-        const f = clamp(mean(su), 1 / 3, 3);
-        A.mx = BASE.mx * f; A.my = BASE.my * f;
-      }
+      if (sx.length && sy.length) { A.a = clamp(mean(sx), BASE.a / 3, BASE.a * 3); A.d = -clamp(mean(sy), -BASE.d / 3, -BASE.d * 3); }
+      else if (su.length) { const f = clamp(mean(su), 1 / 3, 3); A.a = BASE.a * f; A.d = BASE.d * f; }
+      A.b = 0; A.c = 0;
     }
-    // Translation: make the mean residual zero.
-    let dLat = 0, dLng = 0;
-    for (const p of calPoints) {
-      const ll = pxToLl(p.x, p.y);
-      dLat += p.lat - ll.lat; dLng += p.lng - ll.lng;
+    if (!done) {
+      // Shift so the mean residual is zero.
+      let dE = 0, dN = 0;
+      for (const p of pts) { const q = pxToEN(p.x, p.y); dE += p.E - q.E; dN += p.N - q.N; }
+      A.e += dE / n; A.f += dN / n;
     }
-    A.latRef += dLat / calPoints.length;
-    A.lngRef += dLng / calPoints.length;
   }
   rebuildAlignment();
 
@@ -639,8 +669,9 @@
   function fmtDist(m) { return m < 1000 ? Math.round(m / 5) * 5 + ' m' : (m / 1000).toFixed(1) + ' km'; }
   function compass(b) { return ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(((b % 360) + 360) % 360 / 45) % 8]; }
   function distBearing(from, to) {
-    const dx = (to.x - from.x) * A.mx, dy = (to.y - from.y) * A.my;   // metres east / south
-    return { d: Math.hypot(dx, dy), b: (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360 };
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const dE = A.a * dx + A.b * dy, dN = A.c * dx + A.d * dy;   // metres east / north
+    return { d: Math.hypot(dE, dN), b: (Math.atan2(dE, dN) * 180 / Math.PI + 360) % 360 };
   }
 
   function render() {
@@ -658,7 +689,7 @@
     const yp = youPx();
     if (yp) {
       if (you.acc && !you.manual) {
-        const r = you.acc / ((A.mx + A.my) / 2);   // approx radius in map px
+        const r = you.acc / ((scaleX() + scaleY()) / 2);   // approx radius in map px
         const el = mk('', yp.x, yp.y, '<div class="you-acc"></div>');
         el.querySelector('.you-acc').style.cssText = `width:${2 * r * view.s}px;height:${2 * r * view.s}px`;
         el.dataset.acc = r;
@@ -784,7 +815,7 @@
   function calibrateAt(x, y) {
     if (you.lat == null) { you.manual = { x, y }; setGps('warn', 'Position set by hand'); setCalMode(false); render(); return; }
     calPoints.push({ x: Math.round(x), y: Math.round(y), lat: you.lat, lng: you.lng, t: Date.now() });
-    if (calPoints.length > 4) calPoints.shift();
+    if (calPoints.length > 6) calPoints.shift();
     store.set('cal', calPoints);
     rebuildAlignment();
     you.manual = null;
@@ -793,7 +824,8 @@
     const n = calPoints.length;
     setGps('ok', `GPS ±${Math.round(you.acc || 0)} m · aligned (${n})`);
     if (n === 1) showNote('Step 1 done', 'The dot is now on the right spot. When you\'re somewhere else on site, at least 100 m away, tap the crosshair and do it again to fix the scale too.', 'Later');
-    else showNote('Map aligned', 'Distances and directions should now be right across the site. Share the link from Settings so friends get the same alignment.', 'OK');
+    else if (n === 2) showNote('Step 2 done', 'Scale and position are set. A third landmark, away from the line between the first two, also corrects the map\'s slight rotation.', 'OK');
+    else showNote('Map aligned', 'Full fit done. Share the link from Settings so friends get the same alignment, or copy the alignment code.', 'OK');
     const yp = youPx(); if (yp) centerOn(yp.x, yp.y, Math.max(view.s, 1.6));
     render();
   }
@@ -837,7 +869,7 @@
   function updateCalInfo() {
     const el = document.getElementById('calInfo');
     el.textContent = calPoints.length
-      ? `${calPoints.length} correction${calPoints.length > 1 ? 's' : ''} saved · scale ${A.mx.toFixed(2)} × ${A.my.toFixed(2)} m per map pixel`
+      ? `${calPoints.length} landmark${calPoints.length > 1 ? 's' : ''} saved · ${calPoints.length >= 3 && Math.abs(A.b) + Math.abs(A.c) > 0 ? 'full fit incl. rotation' : calPoints.length >= 2 ? 'scale + position' : 'position only'} · ${scaleX().toFixed(2)} × ${scaleY().toFixed(2)} m per map pixel`
       : 'No corrections yet · using the estimated alignment.';
   }
   document.getElementById('btnSettings').addEventListener('click', openModal);
@@ -847,7 +879,7 @@
   document.getElementById('mReset').addEventListener('click', () => {
     calPoints = []; store.del('cal'); rebuildAlignment(); updateCalInfo(); render();
   });
-  function alignCode() { return `${A.latRef.toFixed(6)},${A.lngRef.toFixed(6)},${A.mx.toFixed(3)},${A.my.toFixed(3)}`; }
+  function alignCode() { return [A.a, A.b, A.c, A.d, A.e, A.f].map(v => +v.toFixed(4)).join(','); }
   function shareUrl() { return location.origin + location.pathname + '#a=' + alignCode(); }
   document.getElementById('mShare').addEventListener('click', async () => {
     const msg = document.getElementById('shareMsg'); const url = shareUrl();
