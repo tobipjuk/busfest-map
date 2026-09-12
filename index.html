@@ -466,7 +466,7 @@
   const M_PER_DEG_LNG = 111320 * Math.cos(REF.lat * Math.PI / 180);
   const BASE = { a: 0.79, b: 0, c: 0, d: -1.31, e: -0.79 * 110, f: 1.31 * 15 };
   // Measured on site (Settings > Copy alignment code). When set, the map opens aligned with no walkthrough.
-  const BUILTIN_ALIGN = null;
+  const BUILTIN_ALIGN = { a: 0.7900, b: 0.0000, c: 0.0000, d: -1.3100, e: 69.6854, f: 300.8748 };   // 1 landmark, 12 Sep 2026
   const alignedByDefault = !!(BUILTIN_ALIGN && saneAffine([BUILTIN_ALIGN.a, BUILTIN_ALIGN.b, BUILTIN_ALIGN.c, BUILTIN_ALIGN.d, BUILTIN_ALIGN.e, BUILTIN_ALIGN.f]));
   if (alignedByDefault) Object.assign(BASE, BUILTIN_ALIGN);
   const store = {
