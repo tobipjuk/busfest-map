@@ -750,10 +750,9 @@
     if (calMode) items = items.filter(p => p.k !== 'camping' && p.k !== 'parking');
     if (van && !calMode) items.unshift({ n: 'My van', k: 'van', s: 'Your saved pitch', c: '#17203a', ...van, isVan: true });
     items = items.filter(p => (filter === 'all' || p.k === filter) && (!term || (p.n + ' ' + (p.s || '')).toLowerCase().includes(term)));
-    if (yp) {
-      for (const p of items) p._db = distBearing(yp, placePx(p));
-      if (term || filter !== 'all' || true) items.sort((a, b) => (a.isVan ? -1 : b.isVan ? 1 : a._db.d - b._db.d));
-    }
+    if (yp) for (const p of items) p._db = distBearing(yp, placePx(p));
+    if (calMode || !yp) items.sort((a, b) => a.n.localeCompare(b.n, 'en', { sensitivity: 'base' }));   // landmarks: alphabetical
+    else items.sort((a, b) => (a.isVan ? -1 : b.isVan ? 1 : a._db.d - b._db.d));                          // normal: nearest first
     if (!items.length) { listEl.innerHTML = '<div class="empty">Nothing matches that. Try "toilets", "stage" or "gate".</div>'; return; }
     listEl.innerHTML = items.map((p, i) => `
       <button class="row${target && target.n === p.n ? ' sel' : ''}" data-i="${i}">
