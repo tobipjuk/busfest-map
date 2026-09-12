@@ -337,7 +337,7 @@
 <div class="dim" id="dim"></div>
 <div class="modal" id="modal">
   <h2>Position &amp; map alignment</h2>
-  <p>The blue dot comes from your phone's GPS, placed on the Busfest map using an estimated alignment. If it's off, use <b>Fix my position</b> (the crosshair button): stand somewhere you can identify on the map, then tap that spot. Do it at two different places, well apart, and the scale corrects itself too.</p>
+  <p id="alignIntro">The blue dot comes from your phone's GPS, placed on the Busfest map using an estimated alignment. If it's off, use <b>Fix my position</b> (the crosshair button): stand next to a landmark and pick it from the list. Do it at two or three places, well apart, and the scale and rotation correct themselves too.</p>
   <div class="kv" id="calInfo">No corrections yet.</div>
   <div class="act">
     <button class="btn primary" id="mCal">Fix my position now</button>
@@ -465,6 +465,10 @@
   const M_PER_DEG_LAT = 111200;
   const M_PER_DEG_LNG = 111320 * Math.cos(REF.lat * Math.PI / 180);
   const BASE = { a: 0.79, b: 0, c: 0, d: -1.31, e: -0.79 * 110, f: 1.31 * 15 };
+  // Measured on site (Settings > Copy alignment code). When set, the map opens aligned with no walkthrough.
+  const BUILTIN_ALIGN = null;
+  const alignedByDefault = !!(BUILTIN_ALIGN && saneAffine([BUILTIN_ALIGN.a, BUILTIN_ALIGN.b, BUILTIN_ALIGN.c, BUILTIN_ALIGN.d, BUILTIN_ALIGN.e, BUILTIN_ALIGN.f]));
+  if (alignedByDefault) Object.assign(BASE, BUILTIN_ALIGN);
   const store = {
     get(k, d) { try { const v = localStorage.getItem('busfest.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('busfest.' + k, JSON.stringify(v)); } catch (e) {} },
@@ -801,7 +805,11 @@
     if (on) {
       const gpsOk = you.lat != null;
       const n = calPoints.length;
-      if (gpsOk) showNote(
+      if (gpsOk && (alignedByDefault || sharedAlign)) showNote(
+        'Refine the alignment',
+        'Only needed if the dot looks off. Stand next to a landmark and tap it in the list below, or tap your exact spot on the map.',
+        'Cancel');
+      else if (gpsOk) showNote(
         n === 0 ? 'Line up the map · step 1 of 2' : n === 1 ? 'Line up the map · step 2 of 2' : 'Improve the alignment',
         'Stand next to something you can name (a gate, stage or toilet block) and tap it in the list below. Or tap your exact spot on the map.',
         'Cancel');
@@ -822,7 +830,8 @@
     setCalMode(false);
     const n = calPoints.length;
     setGps('ok', `GPS ±${Math.round(you.acc || 0)} m · aligned (${n})`);
-    if (n === 1) showNote('Step 1 done', 'The dot is now on the right spot. When you\'re somewhere else on site, at least 100 m away, tap the crosshair and do it again to fix the scale too.', 'Later');
+    if (alignedByDefault || sharedAlign) showNote('Alignment refined', 'Your correction is saved on this phone. Tap the crosshair again from another landmark if it still looks off.', 'OK');
+    else if (n === 1) showNote('Step 1 done', 'The dot is now on the right spot. When you\'re somewhere else on site, at least 100 m away, tap the crosshair and do it again to fix the scale too.', 'Later');
     else if (n === 2) showNote('Step 2 done', 'Scale and position are set. A third landmark, away from the line between the first two, also corrects the map\'s slight rotation.', 'OK');
     else showNote('Map aligned', 'Full fit done. Share the link from Settings so friends get the same alignment, or copy the alignment code.', 'OK');
     const yp = youPx(); if (yp) centerOn(yp.x, yp.y, Math.max(view.s, 1.6));
@@ -867,9 +876,10 @@
   function closeModal() { modal.classList.remove('show'); dim.classList.remove('show'); }
   function updateCalInfo() {
     const el = document.getElementById('calInfo');
+    if (alignedByDefault) document.getElementById('alignIntro').innerHTML = 'The map is aligned to GPS out of the box, measured on site. If the dot ever looks off, use <b>Fix my position</b> (the crosshair button): stand next to a landmark and pick it from the list. Corrections stay on this phone only.';
     el.textContent = calPoints.length
       ? `${calPoints.length} landmark${calPoints.length > 1 ? 's' : ''} saved · ${calPoints.length >= 3 && Math.abs(A.b) + Math.abs(A.c) > 0 ? 'full fit incl. rotation' : calPoints.length >= 2 ? 'scale + position' : 'position only'} · ${scaleX().toFixed(2)} × ${scaleY().toFixed(2)} m per map pixel`
-      : 'No corrections yet · using the estimated alignment.';
+      : alignedByDefault ? 'Using the built-in alignment.' : sharedAlign ? 'Using the alignment from the shared link.' : 'No corrections yet · using the estimated alignment.';
   }
   document.getElementById('btnSettings').addEventListener('click', openModal);
   document.getElementById('mClose').addEventListener('click', closeModal);
@@ -926,11 +936,11 @@
       if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && pos.coords.speed > 0.7) you.heading = pos.coords.heading;
       const p = llToPx(you.lat, you.lng);
       const onSite = p.x > -200 && p.x < 1224 && p.y > -200 && p.y < 924;
-      setGps(you.acc < 30 ? 'ok' : 'warn', `GPS ±${Math.round(you.acc)} m · ${calPoints.length ? 'aligned (' + calPoints.length + ')' : sharedAlign ? 'shared alignment' : 'not aligned yet'}`);
+      setGps(you.acc < 30 ? 'ok' : 'warn', `GPS ±${Math.round(you.acc)} m${calPoints.length ? ' · refined (' + calPoints.length + ')' : (sharedAlign || alignedByDefault) ? '' : ' · not aligned yet'}`);
       if (firstFix) {
         firstFix = false;
         if (onSite) centerOn(p.x, p.y, 1.6);
-        if (onSite && !calPoints.length && !sharedAlign) setTimeout(() => { if (!calMode && !calPoints.length) setCalMode(true); }, 1200);
+        if (onSite && !calPoints.length && !sharedAlign && !alignedByDefault) setTimeout(() => { if (!calMode && !calPoints.length) setCalMode(true); }, 1200);
       }
       render();
     }, err => {
